@@ -1,0 +1,53 @@
+[local]
+localhost ansible_ssh_user=ansible ansible_ssh_pass='Ansible1!'
+
+[all:children]
+idrac_hosts
+
+[idrac_hosts:children]
+rco1r202_hosts
+
+[rco1r202_hosts:children]
+rack17_r620
+rack18_r620
+rack19_r620
+rack20_r620
+
+[rco1r202_hosts:vars]
+vc_cluster_name="AZ4"
+xio_ig_name="az4"
+
+[idrac_hosts:vars]
+#VMWare Modules variables
+ansible_python_interpreter='/usr/bin/python3'
+vcenter_hostname="vcenter.sbcuc.net"
+vcenter_username='user@sbcuc.net'
+vcenter_password='Password!'
+datacenter_name="rco1datacenter"
+domain_name="sbcuc.net"
+iscsi_vmhba_name="vmhba64"
+#XtremIO variables
+xio_api_user=user
+xio_api_user_cred='userpassword!'
+xio_cluster="ric00xms0001.sbcuc.net"
+existing_ig_list: []
+volume_list: []
+initiator_group_list: [az1,az2,az3,az4,mgmt,splunk,influx,ssd,staging,"staging-ssd"]
+diag_lun_clusters: [az1,az2,az3,az4]
+volumes_per_dscluster: 4
+size_of_volume: 5T
+
+[rack17_r620]
+rco1r20217c01 ansible_host=10.235.42.41 idrac_racname=rco1r20217c01-idrac model=620 mgmt_ip=10.235.44.41
+rco1r20217c02 ansible_host=10.235.42.42 idrac_racname=rco1r20217c02-idrac model=620 mgmt_ip=10.235.44.42
+                                                                                                                                                                                                                                                                                                              
+[rack18_r620]                                                                                                                                                     rco1r20218c01 ansible_host=10.235.42.62 idrac_racname=rco1r20218c01-idrac model=620 mgmt_ip=10.235.44.62
+rco1r20218c02 ansible_host=10.235.42.63 idrac_racname=rco1r20218c02-idrac model=620 mgmt_ip=10.235.44.63
+                                                                                                                                                                                                                                                                                                              
+[rack19_r620]                                                                                                                                                                                                                                                                                                 
+rco1r20219c01 ansible_host=10.235.42.83 idrac_racname=rco1r20219c01-idrac model=620 mgmt_ip=10.235.44.83 
+rco1r20219c02 ansible_host=10.235.42.84 idrac_racname=rco1r20219c02-idrac model=620 mgmt_ip=10.235.44.84 
+
+[rack20_r620]
+rco1r20220c01 ansible_host=10.235.42.104 idrac_racname=rco1r20220c01-idrac model=620 mgmt_ip=10.235.44.104 
+rco1r20220c02 ansible_host=10.235.42.105 idrac_racname=rco1r20220c02-idrac model=620 mgmt_ip=10.235.44.105

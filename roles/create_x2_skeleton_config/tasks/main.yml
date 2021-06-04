@@ -1,0 +1,113 @@
+---
+- name: X2-Get Initiator Group
+  uri:
+     user: "{{ xio_api_user }}"
+     password: "{{ xio_api_user_cred }}"
+     url: "https://{{ xio_cluster }}/api/json/v3/types/initiator-groups"
+     validate_certs: false
+     return_content: yes
+     body_format: json
+     force_basic_auth: yes
+     method: GET
+  delegate_to: localhost
+  register: get_result
+
+- name: Create a list of existing IGs on X2
+  set_fact: 
+    existing_ig_list: "{{ existing_ig_list + [item.name] }}" 
+  with_items: "{{ get_result['json']['initiator-groups'] }}" 
+
+- name: X2-Create Initiator Group
+  uri:
+     user: "{{ xio_api_user }}"
+     password: "{{ xio_api_user_cred }}"
+     url: "https://{{ xio_cluster }}/api/json/v3/types/initiator-groups"
+     validate_certs: false
+     return_content: yes
+     status_code: 201
+     body_format: json
+     body:
+       'ig-name': "{{ item }}"
+     force_basic_auth: yes
+     method: POST
+  when: item not in existing_ig_list
+  with_items: "{{ initiator_group_list }}"
+  delegate_to: localhost
+
+- name: Generate a list of volumes to be created
+  set_fact:
+    volume_list: "{{ volume_list + ['%02d' % item] }}"
+  loop: "{{ range(1, volumes_per_dscluster + 1, 1)|list }}"
+
+- name: X2-Create Volumes
+  uri:
+     user: "{{ xio_api_user }}"
+     password: "{{ xio_api_user_cred }}"
+     url: "https://{{ xio_cluster }}/api/json/v3/types/volumes"
+     validate_certs: false
+     return_content: yes
+     status_code: 201
+     body_format: json
+     body:
+       #'cluster-id': "{{ xio_cluster_name }}"
+       'vol-name': "{{ item.0 }}-lun{{ item.1 }}"
+       'vol-size': "{{ size_of_volume }}"
+     force_basic_auth: yes
+     method: POST
+  loop: "{{ initiator_group_list|product(volume_list)|list }}"
+  delegate_to: localhost
+
+- name: X2-Create Mapping sbetween LUNs and Initiator groups
+  uri:
+     user: "{{ xio_api_user }}"
+     password: "{{ xio_api_user_cred }}"
+     url: "https://{{ xio_cluster }}/api/json/v3/types/lun-maps"
+     validate_certs: false
+     return_content: yes
+     status_code: 201
+     body_format: json
+     body:
+       #'cluster-id': "{{ xio_cluster_name }}"
+       'vol-id': "{{ item.0 }}-lun{{ item.1 }}"
+       'ig-id': "{{ item.0 }}"
+     force_basic_auth: yes
+     method: POST
+  loop: "{{ initiator_group_list|product(volume_list)|list }}"
+  delegate_to: localhost
+
+- name: X2-Create Diag Volumes
+  uri:
+     user: "{{ xio_api_user }}"
+     password: "{{ xio_api_user_cred }}"
+     url: "https://{{ xio_cluster }}/api/json/v3/types/volumes"
+     validate_certs: false
+     return_content: yes
+     status_code: 201
+     body_format: json
+     body:
+       #'cluster-id': "{{ xio_cluster_name }}"
+       'vol-name': "{{ item.0 }}-diags-lun{{ item.1 }}"
+       'vol-size': "2T"
+     force_basic_auth: yes
+     method: POST
+  loop: "{{ diag_lun_clusters|product(volume_list)|list }}"
+  delegate_to: localhost
+
+- name: X2-Create Mappings between Diag LUNs and Diag Initiator groups
+  uri:
+     user: "{{ xio_api_user }}"
+     password: "{{ xio_api_user_cred }}"
+     url: "https://{{ xio_cluster }}/api/json/v3/types/lun-maps"
+     validate_certs: false
+     return_content: yes
+     status_code: 201
+     body_format: json
+     body:
+       #'cluster-id': "{{ xio_cluster_name }}"
+       'vol-id': "{{ item.0 }}-diags-lun{{ item.1 }}"
+       'ig-id': "{{ item.0 }}"
+     force_basic_auth: yes
+     method: POST
+  loop: "{{ diag_lun_clusters|product(volume_list)|list }}"
+  delegate_to: localhost
+

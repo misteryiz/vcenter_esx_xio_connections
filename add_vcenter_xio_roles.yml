@@ -1,0 +1,12 @@
+#This playbook is to run the following roles mainly related to the XtremIO
+- name: Run XIO connections and config creation
+  hosts:
+    - idrac_hosts
+  gather_facts: False
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+  roles:
+#  - { role: remove_host_xio_initiator }
+  - { role: create_x2_skeleton_config }
+  - { role: add_host_xio_initiator }

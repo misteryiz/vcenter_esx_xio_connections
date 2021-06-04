@@ -1,0 +1,53 @@
+---
+- name: ESXi - Gather iSCSI configuration information
+  community.vmware.vmware_host_iscsi_info:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    esxi_hostname: "{{ inventory_hostname + '.' + domain_name }}"
+    validate_certs: false
+  delegate_to: localhost
+  register: iscsi_info
+
+- name: XIO - Connect to XIO and Add initiator
+  delegate_to: localhost
+  uri:
+     user: "{{ xio_api_user }}"
+     password: "{{ xio_api_user_cred }}"
+     url: "https://{{ xio_cluster }}/api/json/v2/types/initiators"
+     validate_certs: false
+     return_content: yes
+     status_code: 201
+     body_format: json
+     body:
+       'ig-id': '{{ xio_ig_name }}'
+       'port-address': "{{ hostvars[inventory_hostname]['iscsi_info']['iscsi_properties']['iscsi_name'] }}"
+       'initiator-name': "{{ xio_ig_name + '-' + inventory_hostname }}"
+       'operating-system': "esx"
+     force_basic_auth: yes
+     method: POST
+  register: add_initiator_result
+  when: hostvars[inventory_hostname]['iscsi_info'] is defined
+
+- name: ESXi - Recan HBA's and or refresh storage system objects
+  community.vmware.vmware_host_scanhba:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    esxi_hostname: "{{ inventory_hostname + '.' + domain_name }}"
+    validate_certs: false
+    refresh_storage: true
+  delegate_to: localhost
+
+- name: ESXi host - Exit Maintenance Mode
+  community.vmware.vmware_maintenancemode:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    esxi_hostname: "{{ inventory_hostname + '.' + domain_name }}"
+    evacuate: true
+    state: absent
+    validate_certs: false
+  delegate_to: localhost
+
+

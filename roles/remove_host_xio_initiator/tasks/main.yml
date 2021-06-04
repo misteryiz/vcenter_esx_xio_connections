@@ -1,0 +1,30 @@
+---
+- name: XIO - Connect and get initiator info of the Esxi host
+  connection: local
+  uri:
+     user: "{{ xio_api_user }}"
+     password: "{{ xio_api_user_cred }}"
+     url: "https://{{ xio_cluster }}/api/json/v2/types/initiators?name={{ xio_cluster_name + '-' + inventory_hostname }}"
+     validate_certs: false
+     return_content: yes
+     body_format: json
+     force_basic_auth: yes
+     method: GET
+     status_code: 200, 400
+  register: get_initiator_info
+
+- block:
+    - name: XIO - Delete Esxi host initiator
+      connection: local
+      uri:
+         user: "{{ xio_api_user }}"
+         password: "{{ xio_api_user_cred }}"
+         url: "https://{{ xio_cluster }}/api/json/v2/types/initiators?name={{ xio_cluster_name + '-' + inventory_hostname }}"
+         validate_certs: false
+         return_content: yes
+         body_format: json
+         force_basic_auth: yes
+         status_code: 200
+         method: DELETE
+      when: hostvars[inventory_hostname]['get_initiator_info']['json']['content']['name'] == xio_cluster_name + '-' + inventory_hostname
+  when: hostvars[inventory_hostname]['get_initiator_info']['status'] == 200 and hostvars[inventory_hostname]['get_initiator_info']['json']['message'] is not defined
